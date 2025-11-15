@@ -1,0 +1,36 @@
+.page-overlay {
+    /* Tampilkan di seluruh layar */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    /* Ini adalah bayangannya */
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Hitam 50% transparan */
+
+    /* z-index ini SANGAT PENTING */
+    /* Sidebar Anda punya zIndex: 100 (di kode Sidebar.jsx) */
+    /* Jadi, overlay ini harus di bawah Sidebar, tapi di atas konten */
+    z-index: 99;
+
+    /* Mulai dalam keadaan tersembunyi */
+    opacity: 0;
+    visibility: hidden;
+
+    /* Animasi fade-in / fade-out */
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.page-overlay.active {
+    /* Tampilkan saat aktif */
+    opacity: 1;
+    visibility: visible;
+}
+
+.page-content {
+    padding: 30px;
+    background-color: #f0f2f5;
+    min-height: calc(100vh - 70px);
+}
