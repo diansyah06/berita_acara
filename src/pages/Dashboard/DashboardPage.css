@@ -4,23 +4,38 @@
 /* 1. DEFINISI VARIABEL GLOBAL */
 :root {
     --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+<<<<<<< HEAD
 
     --color-primary: #007bff;
     /* Biru primer untuk tombol */
     --color-primary-hover: #0056b3;
 
+=======
+    
+    --color-primary: #007bff; /* Biru primer untuk tombol */
+    --color-primary-hover: #0056b3;
+    
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
     --color-text-header: #222;
     --color-text-body: #555;
     --color-text-light: #495057;
 
     --color-bg-card: #ffffff;
     --color-bg-header-footer: #fcfcfc;
+<<<<<<< HEAD
     --color-bg-page: #f4f7f6;
     /* Warna latar belakang halaman (opsional) */
 
     --color-border: #e0e0e0;
     --color-border-pagination: #dee2e6;
 
+=======
+    --color-bg-page: #f4f7f6; /* Warna latar belakang halaman (opsional) */
+
+    --color-border: #e0e0e0;
+    --color-border-pagination: #dee2e6;
+    
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
     --shadow-main: 0 4px 12px rgba(0, 0, 0, 0.05);
     --border-radius-main: 8px;
     --border-radius-small: 4px;
@@ -31,8 +46,12 @@
 /* Terapkan font ke semua elemen */
 body {
     font-family: var(--font-family-sans);
+<<<<<<< HEAD
     /* background-color: var(--color-bg-page); */
     /* Uncomment jika ingin background abu-abu */
+=======
+    /* background-color: var(--color-bg-page); */ /* Uncomment jika ingin background abu-abu */
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 /* 2. HEADER HALAMAN (Judul "Dashboard" + Tombol "Tambah") */
@@ -44,7 +63,11 @@ body {
 }
 
 .dashboard-header h1 {
+<<<<<<< HEAD
     font-size: 28px;
+=======
+    font-size: 28px; 
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
     font-weight: 700;
     color: var(--color-text-header);
     margin: 0 0 5px 0;
@@ -64,6 +87,7 @@ body {
     vertical-align: middle;
     cursor: pointer;
     border: 1px solid transparent;
+<<<<<<< HEAD
     padding: 10px 18px;
     /* Padding lebih nyaman */
     font-size: 16px;
@@ -72,6 +96,13 @@ body {
     /* Untuk <Link> */
     transition: var(--transition-speed);
     /* Efek hover halus */
+=======
+    padding: 10px 18px; /* Padding lebih nyaman */
+    font-size: 16px;
+    border-radius: var(--border-radius-small);
+    text-decoration: none; /* Untuk <Link> */
+    transition: var(--transition-speed); /* Efek hover halus */
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 .btn-primary {
@@ -83,8 +114,12 @@ body {
 .btn-primary:hover {
     background-color: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
+<<<<<<< HEAD
     filter: brightness(1.1);
     /* Efek hover lebih cerah */
+=======
+    filter: brightness(1.1); /* Efek hover lebih cerah */
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 
@@ -94,14 +129,22 @@ body {
     border-radius: var(--border-radius-main);
     box-shadow: var(--shadow-main);
     border: 1px solid var(--color-border);
+<<<<<<< HEAD
     overflow: hidden;
+=======
+    overflow: hidden; 
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 /* 5. CARD HEADER (Area Judul Tabel) */
 .card-header {
     padding: 20px 24px;
     border-bottom: 1px solid var(--color-border);
+<<<<<<< HEAD
     background-color: var(--color-bg-header-footer);
+=======
+    background-color: var(--color-bg-header-footer); 
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 .card-header h3 {
@@ -113,7 +156,11 @@ body {
 
 /* 6. CARD BODY (Area Isi Tabel) */
 .card-body {
+<<<<<<< HEAD
     padding: 0 24px;
+=======
+    padding: 0 24px; 
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
     /* Padding atas/bawah akan diatur oleh tabel di dalamnya */
     /* Jika tabel tidak punya padding, tambahkan: padding: 20px 24px; */
 }
@@ -139,8 +186,12 @@ body {
     border-radius: var(--border-radius-small);
     cursor: pointer;
     font-weight: 600;
+<<<<<<< HEAD
     transition: var(--transition-speed);
     /* Efek hover halus */
+=======
+    transition: var(--transition-speed); /* Efek hover halus */
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }
 
 .pagination-controls button:hover {
@@ -148,12 +199,17 @@ body {
 }
 
 .pagination-controls button.disabled,
+<<<<<<< HEAD
 .pagination-controls button:disabled {
     /* Style untuk disabled */
+=======
+.pagination-controls button:disabled { /* Style untuk disabled */
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
     background-color: #f8f9fa;
     color: #adb5bd;
     cursor: not-allowed;
     border-color: #f8f9fa;
+<<<<<<< HEAD
 }
 
 /* src/pages/Dashboard/DashboardPage.css */
@@ -192,4 +248,6 @@ body {
     color: white;
     font-weight: 600;
     box-shadow: 0 2px 5px rgba(26, 188, 156, 0.3);
+=======
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 }

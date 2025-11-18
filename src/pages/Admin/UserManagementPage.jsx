@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState } from 'react';
 import './UserManagementPage.css';
 import '../../pages/Dashboard/DashboardPage.css'; // Menggunakan style card dashboard
@@ -120,6 +121,17 @@ const UserManagementPage = () => {
                     )}
                 </div>
             </div>
+=======
+
+import React from 'react';
+
+const UserManagementPage = () => {
+    return (
+        <div>
+            <h1>Halaman Manajemen User</h1>
+            <p>Ini adalah placeholder untuk halaman admin.</p>
+            <p>Link ini aktif dari Sidebar.</p>
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
         </div>
     );
 };

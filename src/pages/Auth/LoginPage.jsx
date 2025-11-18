@@ -1,9 +1,16 @@
+<<<<<<< HEAD
 // src/pages/Auth/LoginPage.jsx
 
 import React, { useState } from 'react';
 import InputField from '../../components/common/InputField';
 import Button from '../../components/common/Button';
 import { useNavigate, Link } from 'react-router-dom';
+=======
+import React, { useState } from 'react';
+import InputField from '../../components/common/InputField';
+import Button from '../../components/common/Button';
+import { useNavigate } from 'react-router-dom';
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -12,6 +19,7 @@ const LoginPage = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
+<<<<<<< HEAD
 
         if (email && password) {
             // --- LOGIKA SIMULASI ROLE ---
@@ -39,6 +47,15 @@ const LoginPage = () => {
 
             alert(`Login Berhasil sebagai: ${role.toUpperCase()}`);
             navigate('/dashboard');
+=======
+        console.log("Mencoba login dengan:", { email, password });
+
+        // Simulasi login berhasil, arahkan ke Dashboard
+        // Nanti, ini akan terjadi setelah ada respons sukses dari Firebase/Backend
+        if (email && password) {
+            alert('Login Berhasil (Simulasi)!');
+            navigate('/dashboard'); // Arahkan ke dashboard
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
         } else {
             alert('Email dan Password tidak boleh kosong!');
         }
@@ -49,6 +66,7 @@ const LoginPage = () => {
             <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
                 Login - Digitalisasi BA
             </h2>
+<<<<<<< HEAD
             {/* Tips untuk testing */}
             <div style={{ backgroundColor: '#e3f2fd', padding: '10px', marginBottom: '20px', fontSize: '12px', borderRadius: '4px' }}>
                 <strong>Tips Login (Simulasi):</strong><br />
@@ -57,6 +75,8 @@ const LoginPage = () => {
                 - Vendor: ketik email "info@vendor.com"
             </div>
 
+=======
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
             <form onSubmit={handleLogin}>
                 <InputField
                     label="Email"
@@ -76,10 +96,13 @@ const LoginPage = () => {
                     Login
                 </Button>
             </form>
+<<<<<<< HEAD
 
             <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}>
                 Belum punya akun? <Link to="/register" style={{ color: '#007bff', fontWeight: 'bold', textDecoration: 'none' }}>Daftar di sini</Link>
             </div>
+=======
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
         </div>
     );
 };

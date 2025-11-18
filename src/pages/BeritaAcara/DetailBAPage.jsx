@@ -1,5 +1,6 @@
 // src/pages/BeritaAcara/DetailBAPage.jsx
 
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './DetailBAPage.css'; // Import CSS baru
@@ -227,6 +228,22 @@ const DetailBAPage = () => {
                 </div>
 
             </div>
+=======
+import React from 'react';
+import { useParams } from 'react-router-dom'; // Import hook untuk mengambil parameter URL
+
+const DetailBAPage = () => {
+    // Ambil 'id' dari URL, sesuai yang didefinisikan di AppRouter: /ba/:id
+    const { id } = useParams();
+
+    return (
+        <div>
+            <h1>Halaman Detail Berita Acara</h1>
+            <p>Ini adalah placeholder untuk melihat detail BA.</p>
+            <p>Link ini aktif dari tabel di Dashboard.</p>
+            <br />
+            <h3>Anda sedang melihat Berita Acara dengan ID: {id}</h3>
+>>>>>>> 7335b69be347e6de3f0ebc435a04b888d778558f
         </div>
     );
 };
