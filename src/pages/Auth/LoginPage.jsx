@@ -14,30 +14,37 @@ const LoginPage = () => {
         e.preventDefault();
 
         if (email && password) {
-            // --- LOGIKA SIMULASI ROLE ---
-            let role = 'user'; // Default role
-            let nama = 'Yohan (Staf)';
+            let userData = {};
 
-            // Jika email mengandung kata 'admin', jadikan ADMIN
+            // --- [PENTING] GANTI DENGAN ID DARI POSTMAN ---
+            const REAL_ID_STAF = "691c916eae5a40b42af36904";   // Contoh: "654fb..."
+            const REAL_ID_VENDOR = "691c9182ae5a40b42af36906";     // Contoh: "654fc..."
+
+            // Logika Simulasi Login
             if (email.includes('admin')) {
-                role = 'admin';
-                nama = 'Yohan (Administrator)';
-            }
-            // Jika email mengandung kata 'vendor', jadikan VENDOR
-            else if (email.includes('vendor')) {
-                role = 'vendor';
-                nama = 'PT. Vendor Sejahtera';
+                userData = { id: "admin_dummy", name: 'Administrator', role: 'admin', email };
+            } 
+            else if (email === 'info@vendor.com') {
+                // Vendor Login
+                userData = { 
+                    id: REAL_ID_VENDOR, // Socket akan pakai ID ini
+                    name: 'PT. Vendor Sejahtera', 
+                    role: 'vendor', 
+                    email 
+                };
+            } 
+            else {
+                // User Biasa Login
+                userData = { 
+                    id: REAL_ID_STAF, // Socket akan pakai ID ini
+                    name: 'Budi (Staf)', 
+                    role: 'user', 
+                    email 
+                };
             }
 
-            // Simpan data user & role ke localStorage agar bisa dibaca halaman lain
-            const userData = {
-                name: nama,
-                email: email,
-                role: role
-            };
             localStorage.setItem('user_sess', JSON.stringify(userData));
-
-            alert(`Login Berhasil sebagai: ${role.toUpperCase()}`);
+            alert(`Login Berhasil sebagai: ${userData.role.toUpperCase()}`);
             navigate('/dashboard');
         } else {
             alert('Email dan Password tidak boleh kosong!');

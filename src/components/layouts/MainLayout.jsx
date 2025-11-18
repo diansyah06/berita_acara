@@ -5,6 +5,7 @@ import { Outlet, useLocation } from 'react-router-dom'; // 1. Import useLocation
 import Navbar from './Navbar';
 import Footer from './Footer';
 import './MainLayout.css'; 
+import { initSocket, disconnectSocket } from '../../services/socket';
 
 // --- 2. CSS Sederhana untuk Notifikasi (Bisa dipindah ke MainLayout.css jika mau) ---
 const notificationStyle = {
@@ -37,27 +38,40 @@ const closeButtonStyle = {
 
 
 const MainLayout = () => {
-    // 3. State untuk menampung notifikasi
     const [notification, setNotification] = useState(null);
-    const location = useLocation(); // Hook untuk mendeteksi perubahan rute
+    const location = useLocation();
 
-    // 4. useEffect untuk mengecek localStorage setiap kali rute berubah
     useEffect(() => {
-        const storedNotification = localStorage.getItem('app_notification');
+        // 1. Ambil data user dari localStorage
+        const userSess = JSON.parse(localStorage.getItem('user_sess'));
+        const userId = userSess ? userSess.id : null; // Pastikan saat login Anda menyimpan ID juga
 
-        if (storedNotification) {
-            try {
-                const data = JSON.parse(storedNotification);
-                setNotification(data); // Tampilkan notifikasi
-                localStorage.removeItem('app_notification'); // Hapus agar tidak muncul lagi
-            } catch (e) {
-                console.error("Gagal parse notifikasi:", e);
-                localStorage.removeItem('app_notification');
-            }
+        if (userId) {
+            // 2. Koneksikan Socket
+            const socket = initSocket(userId);
+
+            // 3. Dengarkan event 'notification' dari backend
+            socket.on("notification", (data) => {
+                console.log("Notifikasi diterima:", data);
+                
+                // Tampilkan notifikasi (data: { title, message, baId })
+                setNotification({
+                    message: `${data.title}: ${data.message}`
+                });
+
+                // Bunyikan suara notifikasi (opsional)
+                // const audio = new Audio('/notification-sound.mp3');
+                // audio.play();
+            });
+
+            // Cleanup saat logout/unmount
+            return () => {
+                socket.off("notification");
+                // disconnectSocket(); // Opsional: putuskan saat ganti layout
+            };
         }
-    }, [location]); // Dependensi: jalankan efek ini setiap kali 'location' berubah
+    }, []);
 
-    // 5. Fungsi untuk menutup notifikasi secara manual
     const handleCloseNotification = () => {
         setNotification(null);
     };
@@ -65,8 +79,7 @@ const MainLayout = () => {
     return (
         <div>
             <Navbar />
-
-            {/* --- 6. Area Render Notifikasi --- */}
+            {/* Tampilan Notifikasi */}
             {notification && (
                 <div style={notificationStyle}>
                     <span>{notification.message}</span>
@@ -75,8 +88,6 @@ const MainLayout = () => {
                     </button>
                 </div>
             )}
-            {/* --- Selesai Area Notifikasi --- */}
-
             <main className="page-content">
                 <Outlet />
             </main>

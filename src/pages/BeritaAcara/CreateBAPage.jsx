@@ -14,6 +14,9 @@ const CreateBAPage = () => {
 
     const navigate = useNavigate();
 
+    // --- [PENTING] MASUKKAN ID VENDOR YANG SAMA SEPERTI DI LOGIN PAGE ---
+    const TARGET_VENDOR_ID = "691c9182ae5a40b42af36906";
+
     const getAutoDate = () => {
         const now = new Date();
         return now.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
@@ -30,35 +33,41 @@ const CreateBAPage = () => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 2. Update Validasi: Pastikan field baru juga diisi
-        if (!nomorKontrak || !vendor || !nominal || !keterangan) {
-            alert('Semua field (termasuk Nominal & Keterangan) wajib diisi!');
-            return;
-        }
-
-        const waktuUpload = getAutoDate();
-
-        const dataBaru = {
+        // Payload yang akan dikirim ke Backend
+        const payload = {
             nomorKontrak,
             jenisBa,
-            vendor,
-            nominal,    // Masukkan nominal ke data
-            keterangan, // Masukkan keterangan ke data
-            tanggal: waktuUpload,
-            status: 'Menunggu'
+            vendorId: TARGET_VENDOR_ID, // Backend butuh ini untuk kirim notif ke Vendor
+            // Data lain opsional untuk tes notif
         };
 
-        console.log('Data baru dikirim:', dataBaru);
+        try {
+            // Panggil API Backend (Tanpa Auth Token sungguhan dulu)
+            const response = await fetch('http://localhost:3000/api/ba', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer token_palsu` // Backend akan kita bypass
+                },
+                body: JSON.stringify(payload)
+            });
 
-        tampilkanNotifikasiPerangkat(
-            'Berita Acara Berhasil Dibuat',
-            `Dokumen senilai ${nominal} berhasil dibuat pada: ${waktuUpload}`
-        );
+            const result = await response.json();
 
-        navigate('/dashboard');
+            if (response.ok) {
+                alert('Sukses! Cek browser Vendor, notifikasi harusnya muncul.');
+                navigate('/dashboard');
+            } else {
+                alert('Gagal backend: ' + result.message);
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Gagal koneksi ke backend');
+        }
     };
 
     return (
