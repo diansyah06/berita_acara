@@ -4,21 +4,23 @@
 /* 1. DEFINISI VARIABEL GLOBAL */
 :root {
     --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    
-    --color-primary: #007bff; /* Biru primer untuk tombol */
+
+    --color-primary: #007bff;
+    /* Biru primer untuk tombol */
     --color-primary-hover: #0056b3;
-    
+
     --color-text-header: #222;
     --color-text-body: #555;
     --color-text-light: #495057;
 
     --color-bg-card: #ffffff;
     --color-bg-header-footer: #fcfcfc;
-    --color-bg-page: #f4f7f6; /* Warna latar belakang halaman (opsional) */
+    --color-bg-page: #f4f7f6;
+    /* Warna latar belakang halaman (opsional) */
 
     --color-border: #e0e0e0;
     --color-border-pagination: #dee2e6;
-    
+
     --shadow-main: 0 4px 12px rgba(0, 0, 0, 0.05);
     --border-radius-main: 8px;
     --border-radius-small: 4px;
@@ -29,7 +31,8 @@
 /* Terapkan font ke semua elemen */
 body {
     font-family: var(--font-family-sans);
-    /* background-color: var(--color-bg-page); */ /* Uncomment jika ingin background abu-abu */
+    /* background-color: var(--color-bg-page); */
+    /* Uncomment jika ingin background abu-abu */
 }
 
 /* 2. HEADER HALAMAN (Judul "Dashboard" + Tombol "Tambah") */
@@ -41,7 +44,7 @@ body {
 }
 
 .dashboard-header h1 {
-    font-size: 28px; 
+    font-size: 28px;
     font-weight: 700;
     color: var(--color-text-header);
     margin: 0 0 5px 0;
@@ -61,11 +64,14 @@ body {
     vertical-align: middle;
     cursor: pointer;
     border: 1px solid transparent;
-    padding: 10px 18px; /* Padding lebih nyaman */
+    padding: 10px 18px;
+    /* Padding lebih nyaman */
     font-size: 16px;
     border-radius: var(--border-radius-small);
-    text-decoration: none; /* Untuk <Link> */
-    transition: var(--transition-speed); /* Efek hover halus */
+    text-decoration: none;
+    /* Untuk <Link> */
+    transition: var(--transition-speed);
+    /* Efek hover halus */
 }
 
 .btn-primary {
@@ -77,7 +83,8 @@ body {
 .btn-primary:hover {
     background-color: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
-    filter: brightness(1.1); /* Efek hover lebih cerah */
+    filter: brightness(1.1);
+    /* Efek hover lebih cerah */
 }
 
 
@@ -87,14 +94,14 @@ body {
     border-radius: var(--border-radius-main);
     box-shadow: var(--shadow-main);
     border: 1px solid var(--color-border);
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 /* 5. CARD HEADER (Area Judul Tabel) */
 .card-header {
     padding: 20px 24px;
     border-bottom: 1px solid var(--color-border);
-    background-color: var(--color-bg-header-footer); 
+    background-color: var(--color-bg-header-footer);
 }
 
 .card-header h3 {
@@ -106,7 +113,7 @@ body {
 
 /* 6. CARD BODY (Area Isi Tabel) */
 .card-body {
-    padding: 0 24px; 
+    padding: 0 24px;
     /* Padding atas/bawah akan diatur oleh tabel di dalamnya */
     /* Jika tabel tidak punya padding, tambahkan: padding: 20px 24px; */
 }
@@ -132,7 +139,8 @@ body {
     border-radius: var(--border-radius-small);
     cursor: pointer;
     font-weight: 600;
-    transition: var(--transition-speed); /* Efek hover halus */
+    transition: var(--transition-speed);
+    /* Efek hover halus */
 }
 
 .pagination-controls button:hover {
@@ -140,9 +148,48 @@ body {
 }
 
 .pagination-controls button.disabled,
-.pagination-controls button:disabled { /* Style untuk disabled */
+.pagination-controls button:disabled {
+    /* Style untuk disabled */
     background-color: #f8f9fa;
     color: #adb5bd;
     cursor: not-allowed;
     border-color: #f8f9fa;
+}
+
+/* src/pages/Dashboard/DashboardPage.css */
+
+/* --- AREA TABS --- */
+.dashboard-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: #666;
+    border-radius: 20px;
+    /* Membuat bentuk lonjong */
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* Style khusus untuk Tab yang sedang DIPILIH (Aktif) */
+.tab-btn.active {
+    background-color: #1ABC9C;
+    /* Warna Primer Teal */
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(26, 188, 156, 0.3);
 }

@@ -1,7 +1,9 @@
+// src/pages/Auth/LoginPage.jsx
+
 import React, { useState } from 'react';
 import InputField from '../../components/common/InputField';
 import Button from '../../components/common/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -10,13 +12,33 @@ const LoginPage = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        console.log("Mencoba login dengan:", { email, password });
 
-        // Simulasi login berhasil, arahkan ke Dashboard
-        // Nanti, ini akan terjadi setelah ada respons sukses dari Firebase/Backend
         if (email && password) {
-            alert('Login Berhasil (Simulasi)!');
-            navigate('/dashboard'); // Arahkan ke dashboard
+            // --- LOGIKA SIMULASI ROLE ---
+            let role = 'user'; // Default role
+            let nama = 'Yohan (Staf)';
+
+            // Jika email mengandung kata 'admin', jadikan ADMIN
+            if (email.includes('admin')) {
+                role = 'admin';
+                nama = 'Yohan (Administrator)';
+            }
+            // Jika email mengandung kata 'vendor', jadikan VENDOR
+            else if (email.includes('vendor')) {
+                role = 'vendor';
+                nama = 'PT. Vendor Sejahtera';
+            }
+
+            // Simpan data user & role ke localStorage agar bisa dibaca halaman lain
+            const userData = {
+                name: nama,
+                email: email,
+                role: role
+            };
+            localStorage.setItem('user_sess', JSON.stringify(userData));
+
+            alert(`Login Berhasil sebagai: ${role.toUpperCase()}`);
+            navigate('/dashboard');
         } else {
             alert('Email dan Password tidak boleh kosong!');
         }
@@ -27,6 +49,14 @@ const LoginPage = () => {
             <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
                 Login - Digitalisasi BA
             </h2>
+            {/* Tips untuk testing */}
+            <div style={{ backgroundColor: '#e3f2fd', padding: '10px', marginBottom: '20px', fontSize: '12px', borderRadius: '4px' }}>
+                <strong>Tips Login (Simulasi):</strong><br />
+                - Admin: ketik email "admin@kantor.com"<br />
+                - User: ketik email "staf@kantor.com"<br />
+                - Vendor: ketik email "info@vendor.com"
+            </div>
+
             <form onSubmit={handleLogin}>
                 <InputField
                     label="Email"
@@ -46,6 +76,10 @@ const LoginPage = () => {
                     Login
                 </Button>
             </form>
+
+            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}>
+                Belum punya akun? <Link to="/register" style={{ color: '#007bff', fontWeight: 'bold', textDecoration: 'none' }}>Daftar di sini</Link>
+            </div>
         </div>
     );
 };
