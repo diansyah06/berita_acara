@@ -1,79 +1,46 @@
-// src/pages/BeritaAcara/CreateBAPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InputField from '../../components/common/InputField';
-import './CreateBAPage.css';
+import './CreateBAPage.css'; // CSS baru untuk tata letak form
+// Import style card & tombol dari Dashboard
 import '../../pages/Dashboard/DashboardPage.css';
 
 const CreateBAPage = () => {
+    // State untuk menampung data form
     const [nomorKontrak, setNomorKontrak] = useState('');
-    const [jenisBa, setJenisBa] = useState('BAPB');
+    const [jenisBa, setJenisBa] = useState('BAPB'); // Default value
     const [vendor, setVendor] = useState('');
     const [tanggal, setTanggal] = useState('');
 
     const navigate = useNavigate();
 
-    // --- 1. Buat fungsi helper untuk menampilkan notifikasi ---
-    const tampilkanNotifikasiPerangkat = (title, body) => {
-        // Cek apakah browser mendukung Notifikasi
-        if (!('Notification' in window)) {
-            console.warn('Browser ini tidak mendukung notifikasi perangkat.');
-            // Fallback ke alert biasa jika tidak didukung
-            alert(title + "\n" + body);
-            return;
-        }
-
-        // Cek apakah izin sudah diberikan
-        if (Notification.permission === 'granted') {
-            // Jika sudah diizinkan, langsung tampilkan
-            new Notification(title, { body: body });
-        }
-        // Cek jika izin belum ditolak (masih 'default' atau 'prompt')
-        else if (Notification.permission !== 'denied') {
-            // Minta izin kepada pengguna
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    new Notification(title, { body: body });
-                } else {
-                    // Jika pengguna menolak, fallback ke alert
-                    alert(title + "\n" + body);
-                }
-            });
-        } else {
-            // Jika izin ditolak (denied), fallback ke alert
-             alert(title + "\n" + body);
-        }
-    };
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Validasi sederhana
         if (!nomorKontrak || !vendor || !tanggal) {
             alert('Semua field wajib diisi!');
             return;
         }
 
+        // Simulasi pengiriman data
         const dataBaru = {
             nomorKontrak,
             jenisBa,
             vendor,
             tanggal,
-            status: 'Menunggu'
+            status: 'Menunggu' // Status default saat dibuat
         };
 
         console.log('Data baru dikirim:', dataBaru);
+        alert('Berita Acara berhasil dibuat!');
         
-        tampilkanNotifikasiPerangkat(
-            'Berita Acara Berhasil Dibuat', // Judul Notifikasi
-            `Jenis Berita acara adalah ${dataBaru.jenisBa}` // Isi Notifikasi
-        );
-        // --- Selesai ---
-        
+        // Arahkan kembali ke dashboard setelah berhasil
         navigate('/dashboard');
     };
 
     return (
         <div className="create-ba-container">
-            {/* ... sisa JSX (form) tidak perlu diubah ... */}
+            {/* 1. Header Halaman */}
             <div className="dashboard-header">
                 <div>
                     <h1>Buat Berita Acara Baru</h1>
@@ -81,11 +48,15 @@ const CreateBAPage = () => {
                 </div>
             </div>
 
+            {/* 2. Card Konten (Gaya dari DashboardPage.css) */}
             <div className="dashboard-card">
                 <form onSubmit={handleSubmit}>
+                    {/* Card Body */}
                     <div className="card-body">
+                        {/* Kita gunakan grid untuk tata letak form */}
                         <div className="form-grid">
                             
+                            {/* Field Nomor Kontrak */}
                             <InputField
                                 label="Nomor Kontrak"
                                 type="text"
@@ -94,6 +65,7 @@ const CreateBAPage = () => {
                                 onChange={(e) => setNomorKontrak(e.target.value)}
                             />
 
+                            {/* Field Jenis BA (Menggunakan Select) */}
                             <div>
                                 <label style={{ fontWeight: 'bold', display: 'block', marginTop: '10px' }}>Jenis Berita Acara</label>
                                 <select 
@@ -107,6 +79,7 @@ const CreateBAPage = () => {
                                 </select>
                             </div>
 
+                            {/* Field Vendor */}
                             <InputField
                                 label="Nama Vendor"
                                 type="text"
@@ -115,6 +88,7 @@ const CreateBAPage = () => {
                                 onChange={(e) => setVendor(e.target.value)}
                             />
 
+                            {/* Field Tanggal Dibuat */}
                             <InputField
                                 label="Tanggal Dibuat"
                                 type="date"
@@ -124,14 +98,16 @@ const CreateBAPage = () => {
                         </div>
                     </div>
 
+                    {/* Card Footer (Untuk Tombol Aksi) */}
                     <div className="card-footer form-actions">
                         <button 
                             type="button" 
-                            className="btn-secondary"
+                            className="btn-secondary" // Buat style tombol 'Batal'
                             onClick={() => navigate('/dashboard')}
                         >
                             Batal
                         </button>
+                        {/* Menggunakan style tombol dari DashboardPage.css */}
                         <button type="submit" className="btn btn-primary">
                             Simpan & Buat
                         </button>
