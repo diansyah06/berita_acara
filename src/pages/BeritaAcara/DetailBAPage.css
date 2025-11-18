@@ -1,0 +1,128 @@
+/* src/pages/BeritaAcara/DetailBAPage.css */
+
+/* Container utama agar ada jarak dari tepi layar */
+.detail-ba-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+
+/* Header navigasi di atas dokumen */
+.detail-header-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* --- SIMULASI KERTAS DOKUMEN (A4 Style) --- */
+.paper-document {
+    background-color: #ffffff;
+    padding: 50px 60px; /* Padding besar seperti margin kertas */
+    border: 1px solid #d1d1d1;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    min-height: 800px;
+    color: #000;
+    
+    /* Font resmi dokumen */
+    font-family: 'Times New Roman', Times, serif; 
+    line-height: 1.6;
+    font-size: 12pt;
+}
+
+/* Judul Dokumen (Tengah) */
+.doc-title {
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    border-bottom: 3px double #000;
+    padding-bottom: 10px;
+}
+
+.doc-title h2 {
+    margin: 0;
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+.doc-title p {
+    margin: 5px 0 0 0;
+    font-size: 12pt;
+}
+
+/* Isi Paragraf Dokumen */
+.doc-body {
+    margin-top: 20px;
+    text-align: justify;
+}
+
+/* Tabel Detail di dalam dokumen */
+.doc-table {
+    width: 100%;
+    margin: 20px 0;
+    border-collapse: collapse;
+}
+
+.doc-table td {
+    padding: 5px 10px;
+    vertical-align: top;
+}
+
+.label-column {
+    width: 180px;
+    font-weight: bold;
+}
+
+/* --- AREA TANDA TANGAN DIGITAL --- */
+.signature-section {
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    page-break-inside: avoid; /* Agar tidak terpotong saat print */
+}
+
+.signature-box {
+    width: 40%;
+    text-align: center;
+}
+
+.sign-placeholder {
+    height: 100px;
+    margin: 10px auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+    color: #888;
+    font-family: sans-serif; /* Font UI untuk placeholder */
+    font-size: 10pt;
+}
+
+/* Simulasi TTD yang sudah jadi (QR Code style) */
+.digital-sign-stamp {
+    border: 2px solid #1abc9c;
+    color: #1abc9c;
+    padding: 10px;
+    display: inline-block;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    background-color: rgba(26, 188, 156, 0.05);
+}
+
+.sign-name {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 10px;
+    display: block;
+}
+
+/* Tombol Print (Menggunakan style .btn dari global, tapi kita custom dikit) */
+.btn-print {
+    background-color: #34495e;
+    color: white;
+}

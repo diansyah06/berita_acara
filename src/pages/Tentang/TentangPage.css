@@ -1,0 +1,51 @@
+.tentang-header {
+    margin-bottom: 25px;
+}
+
+.tentang-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-text-header, #222); 
+    margin: 0;
+}
+
+.tentang-card {
+    background-color: var(--color-bg-card, #ffffff);
+    border-radius: var(--border-radius-main, 8px);
+    box-shadow: var(--shadow-main, 0 4px 12px rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-border, #e0e0e0);
+    padding: 24px 30px; 
+}
+
+.tentang-section {
+    margin-bottom: 25px;
+}
+
+.tentang-section:last-child {
+    margin-bottom: 0;
+}
+
+.tentang-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0; 
+    padding-bottom: 8px;
+}
+
+.tentang-section p,
+.tentang-section li {
+    font-size: 16px;
+    color: var(--color-text-body, #555); 
+    line-height: 1.6; 
+}
+
+.teknologi-list {
+    list-style-type: disc;
+    padding-left: 20px; 
+}
+
+.teknologi-list li {
+    margin-bottom: 8px;
+}

@@ -1,0 +1,73 @@
+/* src/pages/Admin/UserManagementPage.css */
+
+/* Header Halaman Admin */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+/* Tabel User */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.user-table th, 
+.user-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.user-table th {
+    background-color: #f8f9fa;
+    color: #444;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- BADGE (Label Warna) --- */
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+/* Warna Role */
+.role-admin { background-color: #e3f2fd; color: #0d47a1; }   /* Biru */
+.role-user { background-color: #e8f5e9; color: #1b5e20; }    /* Hijau */
+.role-vendor { background-color: #fff3e0; color: #e65100; }  /* Oranye */
+
+/* Warna Status */
+.status-active { color: #28a745; font-weight: bold; }
+.status-pending { 
+    background-color: #fff3cd; 
+    color: #856404; 
+    padding: 4px 8px; 
+    border-radius: 4px; 
+}
+
+/* Tombol Aksi Kecil */
+.btn-action {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+    color: white;
+    transition: opacity 0.2s;
+}
+.btn-action:hover { opacity: 0.8; }
+
+.btn-approve { background-color: #28a745; } /* Hijau */
+.btn-delete { background-color: #dc3545; }  /* Merah */
