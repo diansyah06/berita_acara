@@ -1,0 +1,115 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Dokumentasi API Backend Asah",
+    "description": "Dokumentasi API Backend Asah"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local server"
+    },
+    {
+      "url": "https://backend-asah.vercel.app/api",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullname": {
+                    "example": "any"
+                  },
+                  "username": {
+                    "example": "any"
+                  },
+                  "email": {
+                    "example": "any"
+                  },
+                  "password": {
+                    "example": "any"
+                  },
+                  "confirmPassword": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "requestBody": {}
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchmes": {
+      "bearerAuth": {
+        "type": "http",
+        "schema": "bearer"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "example": "ruffinoahmadnoor"
+          },
+          "password": {
+            "type": "string",
+            "example": "123456789"
+          }
+        }
+      }
+    }
+  }
+}
