@@ -1,22 +1,24 @@
 import mongoose from "mongoose";
 import * as yup from "yup";
-import { STATUSVENDOR } from "../utils/constant";
+import { STATUS_COMPANY } from "../utils/constant";
+
+export const COMPANY_MODEL_NAME = "Company";
 
 const Schema = mongoose.Schema;
 
-export const vendorDAO = yup.object({
+export const companyDAO = yup.object({
   companyName: yup.string().required(),
   companyAddress: yup.string().required(),
   picName: yup.string().required(),
   status: yup
     .string()
-    .oneOf([STATUSVENDOR.ACTIVE, STATUSVENDOR.INACTIVE])
+    .oneOf([STATUS_COMPANY.ACTIVE, STATUS_COMPANY.INACTIVE])
     .required(),
 });
 
-export type Vendor = yup.InferType<typeof vendorDAO>;
+export type Company = yup.InferType<typeof companyDAO>;
 
-const VendorSchema = new Schema<Vendor>(
+const CompanySchema = new Schema<Company>(
   {
     companyName: {
       type: Schema.Types.String,
@@ -32,8 +34,8 @@ const VendorSchema = new Schema<Vendor>(
     },
     status: {
       type: Schema.Types.String,
-      enum: [STATUSVENDOR.ACTIVE, STATUSVENDOR.INACTIVE],
-      default: STATUSVENDOR.ACTIVE,
+      enum: [STATUS_COMPANY.ACTIVE, STATUS_COMPANY.INACTIVE],
+      default: STATUS_COMPANY.ACTIVE,
     },
   },
   {
@@ -41,6 +43,6 @@ const VendorSchema = new Schema<Vendor>(
   }
 );
 
-const VendorModel = mongoose.model("Vendor", VendorSchema);
+const CompanyModel = mongoose.model(COMPANY_MODEL_NAME, CompanySchema);
 
-export default VendorModel;
+export default CompanyModel;

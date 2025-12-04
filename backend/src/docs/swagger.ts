@@ -1,4 +1,5 @@
 import swaggerAutogen from "swagger-autogen";
+import { STATUS_WAREHOUSE_CHECK } from "../utils/constant";
 
 const outputFile = "./swagger_output.json";
 const endpointsFiles = ["../routes/api.ts"];
@@ -14,21 +15,88 @@ const doc = {
       description: "Local server",
     },
     {
-      url: "https://backend-asah.vercel.app/api",
+      url: "https://back-end-asah.vercel.app/api",
       description: "Production server",
     },
   ],
   components: {
-    securitySchmes: {
+    securitySchemes: {
       bearerAuth: {
         type: "http",
-        schema: "bearer",
+        scheme: "bearer",
       },
     },
     schemas: {
+      RegisterRequest: {
+        fullname: "",
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      },
       LoginRequest: {
-        identifier: "ruffinoahmadnoor",
-        password: "123456789",
+        identifier: "",
+        password: "",
+      },
+      CreateCompanyRequest: {
+        companyName: "",
+        companyAddress: "",
+        picName: "",
+        status: "",
+      },
+      CreateWarehouseRequest: {
+        warehouseName: "",
+        warehouseAddress: "",
+        status: "",
+      },
+      AssignRoleRequest: {
+        role: "",
+        vendorId: "",
+        warehouseId: "",
+      },
+      CreateReportDocumentRequest: {
+        category: "",
+        contractNumber: "",
+        paymentNominal: 0,
+        description: "",
+        targetWarehouse: "",
+      },
+      ResubmitReportDocumentRequest: {
+        contractNumber: "",
+        paymentNominal: 0,
+        description: "",
+      },
+      VerifyWarehouseRequest: {
+        type: "object",
+        properties: {
+          checkStatus: {
+            type: "string",
+            enum: [
+              STATUS_WAREHOUSE_CHECK.PENDING.toLowerCase(),
+              STATUS_WAREHOUSE_CHECK.APPROVED.toLowerCase(),
+              STATUS_WAREHOUSE_CHECK.REJECTED.toLowerCase(),
+            ],
+            description: "Warehouse check status",
+          },
+          notes: {
+            type: "string",
+            description: "Warehouse check notes",
+          },
+          images: {
+            type: "array",
+            items: {
+              type: "string",
+              format: "binary",
+            },
+            description:
+              "Optional verification images (max 5 images, 5MB each)",
+          },
+        },
+        required: ["checkStatus", "notes"],
+      },
+      ApproveReportDocumentRequest: {
+        status: "",
+        notes: "",
       },
     },
   },

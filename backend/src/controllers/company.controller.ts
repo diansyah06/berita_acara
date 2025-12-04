@@ -1,13 +1,13 @@
 import { Response } from "express";
 import response from "../utils/response";
-import VendorModel, { vendorDAO } from "./../models/vendor.model";
+import CompanyModel, { companyDAO } from "../models/company.model";
 import { IPaginationQuery, IReqUser } from "../utils/interfaces";
 
 export default {
   async create(req: IReqUser, res: Response) {
     try {
-      await vendorDAO.validate(req.body);
-      const result = await VendorModel.create(req.body);
+      await companyDAO.validate(req.body);
+      const result = await CompanyModel.create(req.body);
       response.success(res, result, "Success create a vendor");
     } catch (error) {
       response.error(res, error, "failed create a vendor");
@@ -28,13 +28,13 @@ export default {
         });
       }
 
-      const result = await VendorModel.find(query)
+      const result = await CompanyModel.find(query)
         .limit(limit)
         .skip((page - 1) * limit)
         .sort({ createdAt: -1 })
         .exec();
 
-      const count = await VendorModel.countDocuments(query);
+      const count = await CompanyModel.countDocuments(query);
 
       response.pagination(
         res,
@@ -53,7 +53,7 @@ export default {
   async findOne(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
-      const result = await VendorModel.findById(id);
+      const result = await CompanyModel.findById(id);
       response.success(res, result, "Success find one vendor");
     } catch (error) {
       response.error(res, error, "failed find one vendor");
@@ -62,7 +62,7 @@ export default {
   async update(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
-      const result = await VendorModel.findByIdAndUpdate(id, req.body, {
+      const result = await CompanyModel.findByIdAndUpdate(id, req.body, {
         new: true,
       });
       response.success(res, result, "Success update vendor");
@@ -73,7 +73,7 @@ export default {
   async remove(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
-      const result = await VendorModel.findByIdAndDelete(id, {
+      const result = await CompanyModel.findByIdAndDelete(id, {
         new: true,
       });
       response.success(res, result, "Success delete vendor");

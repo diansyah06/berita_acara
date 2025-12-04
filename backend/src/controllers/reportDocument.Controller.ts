@@ -1,103 +1,164 @@
-// backend/src/controllers/reportDocument.Controller.ts
-
 import { Response } from "express";
+import { IPaginationQuery, IReqUser } from "../utils/interfaces";
 import response from "../utils/response";
 import UserModel from "../models/user.model";
+import CompanyModel from "../models/company.model";
+import { FilterQuery, isValidObjectId } from "mongoose";
 import {
-  ReportDocumentModel,
-  ReportDocumentDAO,
-} from "../models/reportDocument.model";
-import VendorModel from "../models/vendor.model";
-import { IPaginationQuery, IReqUser } from "../utils/interfaces";
-import {
+  CATEGORY_REPORT_DOCUMENT,
   ROLES,
-  STATUSREPORTDOCUMENT,
-  TYPEEREPORTDOCUMENT,
+  STATUS_REPORT_DOCUMENT,
+  STATUS_WAREHOUSE_CHECK,
 } from "../utils/constant";
+import WarehouseModel from "../models/warehouse.model";
+import { getDigitalSignature } from "../utils/digitalSignature";
+import ReportDocumentModel, {
+  ImageMetaData,
+  reportDocumentDAO,
+  TypeReportDocument,
+  verifyWarehouseValidationSchema,
+} from "../models/reportDocumet.model";
+import uploader from "../utils/uploader";
+import * as Yup from "yup";
+import { NotificationService } from "../utils/notification";
 
 export default {
   async create(req: IReqUser, res: Response) {
     try {
-      await ReportDocumentDAO.validate(req.body);
+      const userId = req.user?.id;
 
-      const user = await UserModel.findById(req.user?.id);
-
-      if (!user?.vendorId) {
-        return response.unauthorized(res, "unauthorized");
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return response.notFound(res, "User not found");
       }
 
-      const vendorData = await VendorModel.findById(user.vendorId);
+      const company = await CompanyModel.findById(user.vendorId);
+      if (!company) {
+        return response.notFound(res, "Company not found");
+      }
 
-      if (!vendorData) {
-        return response.error(res, null, "Vendor Data not found");
+      const { category, targetWarehouse, ...otherBody } = req.body;
+
+      if (!isValidObjectId(targetWarehouse)) {
+        return response.notFound(res, "targetWarehouse not found");
+      }
+
+      let finalTargetWarehouseId = null;
+
+      if (category === CATEGORY_REPORT_DOCUMENT.BAPB) {
+        if (!targetWarehouse) {
+          return response.error(
+            res,
+            null,
+            "Target Warehouse (targetWarehouseId) is required for BAPB documents."
+          );
+        }
+
+        const warehouseExist = await WarehouseModel.findById(targetWarehouse);
+        if (!warehouseExist) {
+          return response.notFound(res, "Target Warehouse not found");
+        }
+
+        finalTargetWarehouseId = targetWarehouse;
       }
 
       const payload = {
-        ...req.body,
+        ...otherBody,
+        category: category,
+        targetWarehouse: finalTargetWarehouseId,
+        status: STATUS_REPORT_DOCUMENT.PENDING,
         vendorSnapshot: {
-          vendorRefId: vendorData._id,
-          companyName: vendorData.companyName,
-          picName: vendorData.picName,
+          companyRefId: user.vendorId,
+          companyName: company.companyName,
+          picName: company.picName,
         },
-        createdBy: user.id,
-        status: STATUSREPORTDOCUMENT.PENDING,
-      };
+        createdBy: user._id,
+        warehouseCheck: null,
+        approvalInfo: null,
+      } as TypeReportDocument;
+
+      await reportDocumentDAO.validate(payload);
 
       const result = await ReportDocumentModel.create(payload);
-      response.success(res, result, "Success create a report document");
+
+      if (
+        category === CATEGORY_REPORT_DOCUMENT.BAPB &&
+        finalTargetWarehouseId
+      ) {
+        try {
+          // Cari PIC Gudang yang bertanggung jawab
+          const warehouseUsers = await UserModel.find({
+            role: ROLES.PICGUDANG,
+            warehouseId: finalTargetWarehouseId,
+          });
+
+          // Kirim notifikasi ke semua PIC Gudang di warehouse tersebut
+          for (const warehouseUser of warehouseUsers) {
+            await NotificationService.notifyWarehouseCheck(
+              result,
+              warehouseUser,
+              company.companyName
+            );
+          }
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+          // Jangan block response jika notifikasi gagal
+        }
+      }
+
+      response.created(res, result, "Success create a report document");
     } catch (error) {
       response.error(res, error, "failed create a report document");
     }
   },
-  
   async findAll(req: IReqUser, res: Response) {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      type,
-      status,
-    } = req.query as unknown as IPaginationQuery & {
-      type?: string;
-      status?: string;
-    };
-
     try {
-      const user = req.user;
-      let query: any = {};
+      const user = await UserModel.findById(req.user?.id);
 
-      if (user?.role === ROLES.VENDOR) {
-        query.createdBy = user.id;
-      } else if (user?.role === ROLES.PICGUDANG) {
-        query.type = TYPEEREPORTDOCUMENT.BAPB;
-      } else if (user?.role === ROLES.DIREKSIPEKERJAAN) {
-        query.type = TYPEEREPORTDOCUMENT.BAPP;
+      if (!user) {
+        return response.notFound(res, "User not found");
       }
+      const buildQuery = (filter: any) => {
+        let query: FilterQuery<TypeReportDocument> = {};
 
-      if (search) {
-        query.$or = [
-          {
-            contractNumber: { $regex: search, $options: "i" },
-          },
-          {
-            "vendorSnapshot.companyName": { $regex: search, $options: "i" },
-          },
-        ];
-      }
+        if (user?.role === ROLES.VENDOR) {
+          query.createdBy = user._id;
+        } else if (user?.role === ROLES.PICGUDANG) {
+          query.category = CATEGORY_REPORT_DOCUMENT.BAPB;
+          if (user.warehouseId) {
+            query.targetWarehouse = user.warehouseId;
+          } else {
+            query.targetWarehouse = "000000000000000000000000";
+          }
+        } else if (user?.role === ROLES.PEMESANBARANG) {
+          query.category = CATEGORY_REPORT_DOCUMENT.BAPB;
+        } else if (user?.role === ROLES.DIREKSIPEKERJAAN) {
+          query.category = CATEGORY_REPORT_DOCUMENT.BAPP;
+        }
 
-      if (type) {
-        query.type = type;
-      }
+        if (filter.search) {
+          query.$text = { $search: filter.search };
+        }
 
-      if (status) {
-        query.status = status;
-      }
+        if (filter.category) {
+          query.category = filter.category;
+        }
+
+        if (filter.status) {
+          query.status = filter.status;
+        }
+
+        return query;
+      };
+
+      const { limit = 10, page = 1, search, category, status } = req.query;
+
+      const query = buildQuery({ search, category, status });
 
       const result = await ReportDocumentModel.find(query)
-        .limit(limit)
-        .skip((page - 1) * limit)
+        .limit(+limit)
+        .skip((+page - 1) * +limit)
         .sort({ createdAt: -1 })
-        .populate("createdBy", "fullname email")
         .exec();
 
       const count = await ReportDocumentModel.countDocuments(query);
@@ -106,9 +167,9 @@ export default {
         res,
         result,
         {
+          current: +page,
           total: count,
-          totalPages: Math.ceil(count / limit),
-          current: page,
+          totalPages: Math.ceil(count / +limit),
         },
         "Success find all report document"
       );
@@ -116,22 +177,24 @@ export default {
       response.error(res, error, "failed find all report document");
     }
   },
-
   async findOne(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
+      const user = req.user;
 
-      const result = await ReportDocumentModel.findById(id)
-        .populate("createdBy", "fullname email")
-        .populate("approvalInfo.approvedBy", "fullname email");
+      if (!isValidObjectId(id)) {
+        return response.notFound(res, "failed find one report document");
+      }
+
+      const result = await ReportDocumentModel.findById(id);
 
       if (!result) {
-        return response.error(res, null, "Report Document not found");
+        return response.notFound(res, "failed find one report document");
       }
 
       if (
-        req.user?.role === ROLES.VENDOR &&
-        result.createdBy._id.toString() !== req.user.id?.toString()
+        user?.role === ROLES.VENDOR &&
+        result.createdBy.toString() !== user?.id?.toString()
       ) {
         return response.unauthorized(res, "unauthorized");
       }
@@ -141,118 +204,395 @@ export default {
       response.error(res, error, "failed find one report document");
     }
   },
-
   async update(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
-      const user = req.user;
-
-      const doc = await ReportDocumentModel.findById(id);
-
-      if (!doc) {
-        return response.error(res, null, "Report Document not found");
-      }
-
-      if (doc.createdBy.toString() !== user?.id?.toString()) {
-        return response.unauthorized(res, "unauthorized");
-      }
-
-      if (doc.status !== STATUSREPORTDOCUMENT.PENDING) {
-        return response.error(res, null, "Report Document already approved");
-      }
-
-      delete req.body.status;
-      delete req.body.vendorSnapshot;
-      delete req.body.approvalInfo;
-
       const result = await ReportDocumentModel.findByIdAndUpdate(id, req.body, {
         new: true,
       });
 
-      response.success(res, result, "Success update report document");
+      response.success(res, result, "Success update a report document");
     } catch (error) {
-      response.error(res, error, "failed update report document");
+      response.error(res, error, "failed delete a report document");
     }
   },
-
   async remove(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
+      const result = await ReportDocumentModel.findByIdAndDelete(id, {
+        new: true,
+      });
+
+      response.success(res, result, "Success update a report document");
+    } catch (error) {
+      response.error(res, error, "failed delete a report document");
+    }
+  },
+  async resubmit(req: IReqUser, res: Response) {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return response.notFound(res, "User not found");
+    }
+
+    if (!isValidObjectId(id)) {
+      return response.notFound(res, "failed find one report document");
+    }
+
+    const doc = await ReportDocumentModel.findById(id);
+
+    if (!doc) {
+      return response.notFound(res, "Report Document not found");
+    }
+
+    if (doc.createdBy.toString() !== user._id.toString()) {
+      return response.unauthorized(res, "unauthorized");
+    }
+
+    if (doc.status === STATUS_REPORT_DOCUMENT.APPROVED) {
+      return response.error(res, null, "Report Document already approved");
+    }
+
+    doc.status = STATUS_REPORT_DOCUMENT.PENDING;
+    doc.approvalInfo = null;
+
+    if (doc.category === CATEGORY_REPORT_DOCUMENT.BAPB) {
+      doc.warehouseCheck = null;
+    }
+
+    delete req.body.status;
+    delete req.body.vendorSnapshot;
+    delete req.body.warehouseCheck;
+    delete req.body.approvalInfo;
+    delete req.body.createdBy;
+
+    const updatePayload = {
+      ...req.body,
+      status: doc.status,
+      warehouseCheck: doc.warehouseCheck,
+      approvalInfo: doc.approvalInfo,
+      vendorSnapshot: doc.vendorSnapshot,
+      createdBy: doc.createdBy,
+      category: doc.category,
+      targetWarehouse: doc.targetWarehouse,
+    } as TypeReportDocument;
+
+    await reportDocumentDAO.validate(updatePayload);
+
+    const result = await ReportDocumentModel.findByIdAndUpdate(
+      id,
+      updatePayload,
+      {
+        new: true,
+      }
+    );
+
+    // === TAMBAHAN KODE NOTIFIKASI ===
+    // Kirim notifikasi ulang ke PIC Gudang jika BAPB
+    if (doc.category === CATEGORY_REPORT_DOCUMENT.BAPB && doc.targetWarehouse) {
+      try {
+        const company = await CompanyModel.findById(
+          doc.vendorSnapshot.companyRefId
+        );
+        const warehouseUsers = await UserModel.find({
+          role: ROLES.PICGUDANG,
+          warehouseId: doc.targetWarehouse,
+        });
+
+        for (const warehouseUser of warehouseUsers) {
+          await NotificationService.notifyWarehouseCheck(
+            result,
+            warehouseUser,
+            company?.companyName || doc.vendorSnapshot.companyName
+          );
+        }
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
+      }
+    }
+
+    response.success(res, result, "Success resubmit a report document");
+  },
+  async verifyByWarehouse(req: IReqUser, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const { checkStatus, notes } = req.body;
+
+      await verifyWarehouseValidationSchema.validate(
+        { checkStatus, notes },
+        { abortEarly: false }
+      );
+
+      const files = req.files as Express.Multer.File[] | undefined;
+      const maxImagesAllowed = 5;
+      const maxFileSize = 5;
+
+      if (files && files.length > maxImagesAllowed) {
+        return response.badRequest(
+          res,
+          `You can upload a maximum of ${maxImagesAllowed} images.`
+        );
+      }
+
+      if (files) {
+        const invalidFiles = files.filter(
+          (file) => file.size > maxFileSize * 1024 * 1024
+        );
+        if (invalidFiles.length > 0) {
+          return response.badRequest(
+            res,
+            `File size must be less than ${maxFileSize}MB.`
+          );
+        }
+      }
+
+      const validStatuses = Object.values(STATUS_WAREHOUSE_CHECK);
+
+      if (!validStatuses.includes(checkStatus)) {
+        return response.error(
+          res,
+          null,
+          `Invalid checkStatus. Allowed values: ${validStatuses.join(", ")}`
+        );
+      }
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return response.notFound(res, "User not found");
+      }
+
+      if (user.role !== ROLES.PICGUDANG) {
+        return response.unauthorized(res, "unauthorized");
+      }
+
+      if (!user.warehouseId) {
+        return response.unauthorized(res, "unauthorized");
+      }
+
+      const warehouse = await WarehouseModel.findById(user.warehouseId);
+      if (!warehouse) {
+        return response.notFound(res, "Warehouse not found");
+      }
 
       const doc = await ReportDocumentModel.findById(id);
-
-      if (doc && doc.status === STATUSREPORTDOCUMENT.APPROVED) {
+      if (!doc) {
+        return response.notFound(res, "Report Document not found");
+      }
+      if (doc.category !== CATEGORY_REPORT_DOCUMENT.BAPB) {
+        return response.error(res, null, "Report Document not BAPB");
+      }
+      if (doc.status !== STATUS_REPORT_DOCUMENT.PENDING) {
         return response.error(res, null, "Report Document already approved");
       }
 
-      const result = await ReportDocumentModel.findByIdAndDelete(id);
+      if (
+        doc.targetWarehouse &&
+        doc.targetWarehouse.toString() !== warehouse._id.toString()
+      ) {
+        return response.unauthorized(res, "unauthorized");
+      }
 
-      response.success(res, result, "Success delete report document");
+      let uploadedImages: ImageMetaData[] = [];
+
+      if (files && files.length > 0) {
+        try {
+          const uploadResults = await uploader.uploadMultiple(files);
+
+          uploadedImages = uploadResults.map((result) => ({
+            url: result.secure_url,
+            publicId: result.public_id,
+            uploadedAt: new Date(),
+          }));
+        } catch (error) {
+          return response.error(
+            res,
+            error,
+            "Failed to upload images. Please try again."
+          );
+        }
+      }
+
+      const warehouseCheckPayload = {
+        warehouseRefId: warehouse._id,
+        warehouseName: warehouse.warehouseName,
+        checkerRefId: user._id,
+        checkerName: user.fullname,
+        checkAt: new Date(),
+        checkStatus: checkStatus,
+        notes: notes,
+        images: uploadedImages,
+      };
+
+      let updatePayload: any = {
+        warehouseCheck: warehouseCheckPayload,
+      };
+
+      if (checkStatus === STATUS_WAREHOUSE_CHECK.REJECTED) {
+        updatePayload.status = STATUS_REPORT_DOCUMENT.REJECTED;
+      }
+      const result = await ReportDocumentModel.findByIdAndUpdate(
+        id,
+        updatePayload,
+        {
+          new: true,
+        }
+      );
+
+      try {
+        if (checkStatus === STATUS_WAREHOUSE_CHECK.APPROVED) {
+          // Kirim notifikasi ke Pemesan Barang untuk approval
+          const approvers = await UserModel.find({
+            role: ROLES.PEMESANBARANG,
+          });
+
+          const company = await CompanyModel.findById(
+            doc.vendorSnapshot.companyRefId
+          );
+
+          for (const approver of approvers) {
+            await NotificationService.notifyApprovalNeeded(
+              result,
+              approver,
+              company?.companyName || doc.vendorSnapshot.companyName,
+              user.fullname
+            );
+          }
+        } else if (checkStatus === STATUS_WAREHOUSE_CHECK.REJECTED) {
+          // Kirim notifikasi penolakan ke vendor
+          const vendorUser = await UserModel.findById(doc.createdBy);
+          if (vendorUser) {
+            await NotificationService.notifyDocumentRejected(
+              result,
+              vendorUser,
+              user.fullname,
+              "warehouse"
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
+      }
+
+      response.success(res, result, "Success verify by warehouse");
     } catch (error) {
-      response.error(res, error, "failed delete report document");
+      response.error(res, error, "failed verify by warehouse");
     }
   },
-
   async approve(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
-      const user = await UserModel.findById(req.user?.id);
-      const { isApproved } = req.body;
+      const userId = req.user?.id;
+
+      const { status, notes } = req.body;
+
+      if (status === STATUS_REPORT_DOCUMENT.PENDING) {
+        return response.error(res, null, "Report Document not approved");
+      }
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return response.notFound(res, "User not found");
+      }
 
       const doc = await ReportDocumentModel.findById(id);
-
       if (!doc) {
-        return response.error(res, null, "Report Document not found");
+        return response.notFound(res, "Report Document not found");
       }
 
-      // --- LOGIKA APPROVAL (4 ROLE) ---
-      if (
-        doc.type === TYPEEREPORTDOCUMENT.BAPB &&
-        user?.role !== ROLES.PICGUDANG
-      ) {
-        return response.error(
+      let isAuthorzied = false;
+
+      if (doc.category === CATEGORY_REPORT_DOCUMENT.BAPB) {
+        if (user.role === ROLES.PEMESANBARANG) {
+          isAuthorzied = true;
+        }
+      } else if (doc.category === CATEGORY_REPORT_DOCUMENT.BAPP) {
+        if (user.role === ROLES.DIREKSIPEKERJAAN) {
+          isAuthorzied = true;
+        }
+      }
+
+      if (!isAuthorzied) {
+        return response.unauthorized(res, "unauthorized");
+      }
+
+      if (doc.status !== STATUS_REPORT_DOCUMENT.PENDING) {
+        return response.badRequest(
           res,
-          null,
-          "Hanya PIC Gudang yang boleh menyetujui BAPB"
+          "Report Document is not pending state for approve"
         );
       }
 
-      if (
-        doc.type === TYPEEREPORTDOCUMENT.BAPP &&
-        user?.role !== ROLES.DIREKSIPEKERJAAN
-      ) {
-        return response.error(
-          res,
-          null,
-          "Hanya Direksi Pekerjaan yang boleh menyetujui BAPP"
-        );
-      }
-      // ----------------------------------
-
-      const approver = await UserModel.findById(user?.id);
-
-      if (!approver) {
-        return response.error(res, null, "User not found");
+      if (doc.category === CATEGORY_REPORT_DOCUMENT.BAPB) {
+        if (
+          !doc.warehouseCheck ||
+          doc.warehouseCheck.checkStatus !== STATUS_WAREHOUSE_CHECK.APPROVED
+        ) {
+          return response.error(
+            res,
+            null,
+            "Report Document is not approved by warehouse"
+          );
+        }
       }
 
-      if (isApproved) {
-        doc.status = STATUSREPORTDOCUMENT.APPROVED;
-        doc.approvalInfo = {
-          approvedBy: approver?.id,
-          approvedByName: approver?.fullname,
-          approvedAt: new Date(),
-          isSigned: true,
-          digitalSignature: `SIG-${Date.now()}-${approver?.id}`,
-        };
-      } else {
-        doc.status = STATUSREPORTDOCUMENT.REJECTED;
+      const isApproved = status === STATUS_REPORT_DOCUMENT.APPROVED;
+
+      const signatureString = isApproved
+        ? getDigitalSignature(user._id.toString())
+        : "N/A";
+
+      const updatePayload = {
+        status: status,
+        approvalInfo: {
+          approverRefId: user._id,
+          approverName: user.fullname,
+          approveAt: new Date(),
+          notes: notes,
+          isSigned: isApproved,
+          digitalSignature: signatureString,
+        },
+      };
+
+      const result = await ReportDocumentModel.findByIdAndUpdate(
+        id,
+        updatePayload,
+        {
+          new: true,
+        }
+      );
+
+      try {
+        const vendorUser = await UserModel.findById(doc.createdBy);
+
+        if (vendorUser) {
+          if (status === STATUS_REPORT_DOCUMENT.APPROVED) {
+            // Kirim notifikasi sukses ke vendor
+            await NotificationService.notifyDocumentApproved(
+              result,
+              vendorUser,
+              user.fullname
+            );
+          } else if (status === STATUS_REPORT_DOCUMENT.REJECTED) {
+            // Kirim notifikasi penolakan ke vendor
+            await NotificationService.notifyDocumentRejected(
+              result,
+              vendorUser,
+              user.fullname,
+              "approval"
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error("Notification error:", notifError);
       }
 
-      await doc.save();
-
-      response.success(res, doc, "Success approve report document");
+      response.success(res, result, "Success approve a report document");
     } catch (error) {
-      response.error(res, error, "failed approve report document");
+      response.error(res, error, "failed approve a report document");
     }
   },
 };

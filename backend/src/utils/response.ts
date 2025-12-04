@@ -18,6 +18,15 @@ export default {
       data: data,
     });
   },
+  created(res: Response, data: any, message: string) {
+    res.status(201).json({
+      meta: {
+        status: 201,
+        message: message,
+      },
+      data: data,
+    });
+  },
   error(res: Response, error: unknown, message: string) {
     if (error instanceof Yup.ValidationError) {
       return res.status(400).json({
@@ -46,7 +55,7 @@ export default {
       return res.status(500).json({
         meta: {
           status: 500,
-          message: _err.errorResonse.errmsg,
+          message: _err.errorResponse.errmsg,
         },
         data: _err,
       });
@@ -58,6 +67,24 @@ export default {
         message: message,
       },
       data: error,
+    });
+  },
+  badRequest(res: Response, message: string = "Bad Request") {
+    res.status(400).json({
+      meta: {
+        status: 400,
+        message: message,
+      },
+      data: null,
+    });
+  },
+  notFound(res: Response, message: string = "Not Found") {
+    res.status(404).json({
+      meta: {
+        status: 404,
+        message: message,
+      },
+      data: null,
     });
   },
   unauthorized(res: Response, message: string = "Unauthorized") {

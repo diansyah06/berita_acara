@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import { encrypt } from "../utils/encryption";
 import { ROLES } from "../utils/constant";
+import { COMPANY_MODEL_NAME } from "./company.model";
+import { WAREHOUSE_MODEL_NAME } from "./warehouse.model";
+
+export const USER_MODEL_NAME = "User";
 
 export interface User {
   fullname: string;
@@ -12,6 +16,7 @@ export interface User {
   isActive: boolean;
   activationCode: string;
   vendorId?: mongoose.Types.ObjectId;
+  warehouseId?: mongoose.Types.ObjectId;
   security: {
     is2FAConfigured: boolean;
     twoFactorSecret: string;
@@ -45,6 +50,7 @@ const UserSchema = new Schema<User>(
       enum: [
         ROLES.ADMINISTRATOR,
         ROLES.VENDOR,
+        ROLES.PEMESANBARANG,
         ROLES.DIREKSIPEKERJAAN,
         ROLES.PICGUDANG,
         ROLES.PENDINGAPPROVAL,
@@ -57,14 +63,19 @@ const UserSchema = new Schema<User>(
     },
     isActive: {
       type: Schema.Types.Boolean,
-      default: true,
+      default: false,
     },
     activationCode: {
       type: Schema.Types.String,
     },
     vendorId: {
       type: Schema.Types.ObjectId,
-      ref: "Vendor",
+      ref: COMPANY_MODEL_NAME,
+      default: null,
+    },
+    warehouseId: {
+      type: Schema.Types.ObjectId,
+      ref: WAREHOUSE_MODEL_NAME,
       default: null,
     },
     security: {
@@ -97,6 +108,6 @@ UserSchema.methods.toJSON = function () {
   return user;
 };
 
-const UserModel = mongoose.model("User", UserSchema);
+const UserModel = mongoose.model(USER_MODEL_NAME, UserSchema);
 
 export default UserModel;

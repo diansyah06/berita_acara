@@ -18,6 +18,8 @@ export interface IUserToken
 }
 
 export interface IReqUser extends Request {
+  params: { id: any; };
+  body: { role: any; vendorId: any; warehouseId: any; };
   user?: IUserToken;
 }
 

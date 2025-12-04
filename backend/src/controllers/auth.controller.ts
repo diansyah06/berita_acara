@@ -1,29 +1,35 @@
-// src/controllers/auth.controller.ts
-
 import { Request, Response } from "express";
 import * as Yup from "yup";
 
 import UserModel from "../models/user.model";
-import VendorModel from "../models/vendor.model"; // Import Vendor Model
 import { encrypt } from "../utils/encryption";
-import { generateToken } from "../utils/jwt";
+import {
+  generateToken,
+  generateTempToken,
+  verifyTempToken,
+} from "../utils/jwt";
 import response from "../utils/response";
 import { IReqUser } from "../utils/interfaces";
-import { ROLES, STATUSVENDOR } from "../utils/constant";
+import { verifyTwoFactorToken } from "../utils/2fa";
 
+// Update Tipe Data Register untuk menerima role
 type TRegister = {
   fullname: string;
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role?: string;        // Tambahan: Role
-  companyName?: string; // Tambahan: Nama Perusahaan (Khusus Vendor)
+  role?: string; // Tambahkan ini agar role dari frontend terbaca
 };
 
 type TLogin = {
   identifier: string;
   password: string;
+};
+
+type TVerifyLogin2FA = {
+  tempToken: string;
+  token: string;
 };
 
 const registerValidateSchema = Yup.object({
@@ -37,7 +43,9 @@ const registerValidateSchema = Yup.object({
       "at-least-one-uppercase-letter",
       "Password must contain at least one uppercase letter",
       (value) => {
-        if (!value) return false;
+        if (!value) {
+          return false;
+        }
         const regex = /(?=.*[A-Z])/;
         return regex.test(value);
       }
@@ -46,7 +54,9 @@ const registerValidateSchema = Yup.object({
       "at-least-one-number",
       "Password must contain at least one number",
       (value) => {
-        if (!value) return false;
+        if (!value) {
+          return false;
+        }
         const regex = /(?=.*\d)/;
         return regex.test(value);
       }
@@ -54,77 +64,60 @@ const registerValidateSchema = Yup.object({
   confirmPassword: Yup.string()
     .required()
     .oneOf([Yup.ref("password"), ""], "Password does not match"),
-  role: Yup.string().optional(), // Validasi Role (Opsional karena default di Model ada)
-  companyName: Yup.string().when('role', {
-    is: (val: string) => val === ROLES.VENDOR,
-    then: (schema) => schema.required("Company Name is required for Vendor"),
-    otherwise: (schema) => schema.optional()
-  })
+});
+
+const verifyLogin2FASchema = Yup.object({
+  tempToken: Yup.string().required(),
+  token: Yup.string()
+    .required("2FA token is required")
+    .length(6, "Token must be 6 digits long")
+    .matches(/^\d+$/, "Token must contain only numbers"),
 });
 
 export default {
   async register(req: Request, res: Response) {
-    // 1. Ambil data tambahan role dan companyName
-    const { fullname, username, email, password, confirmPassword, role, companyName } =
+    const { fullname, username, email, password, confirmPassword, role } =
       req.body as TRegister;
 
     try {
-      // 2. Validasi Input
       await registerValidateSchema.validate({
         fullname,
         username,
         email,
         password,
         confirmPassword,
-        role,
-        companyName
       });
 
-      // Cek apakah username/email sudah ada (Mencegah duplikat)
-      const existingUser = await UserModel.findOne({ $or: [{ email }, { username }] });
-      if (existingUser) {
-        return response.error(res, null, "Email or Username already exists");
-      }
-
-      // 3. Siapkan Payload User Dasar
-      const userPayload: any = {
+      const result = await UserModel.create({
         fullname,
         username,
         email,
         password,
-      };
-
-      // 4. Logika Penanganan Role
-      // Jika role dikirim dari frontend, gunakan itu. Jika tidak, biarkan default model (PENDINGAPPROVAL).
-      if (role) {
-        // Pastikan role yang dikirim valid sesuai Enum ROLES
-        const validRoles = Object.values(ROLES);
-        if (validRoles.includes(role as any)) {
-          userPayload.role = role;
-        }
-      }
-
-      // 5. Logika Khusus VENDOR
-      // Jika User mendaftar sebagai Vendor, kita harus buat data Vendor-nya juga
-      if (role === ROLES.VENDOR && companyName) {
-        // Buat Data Vendor Baru
-        const newVendor = await VendorModel.create({
-          companyName: companyName,
-          companyAddress: "Alamat belum diisi (Update Profil)", // Default address
-          picName: fullname, // PIC disamakan dengan nama pendaftar
-          status: STATUSVENDOR.ACTIVE // Atau INACTIVE jika butuh approval admin dulu
-        });
-
-        // Link-kan ID Vendor ke User
-        userPayload.vendorId = newVendor._id;
-      }
-
-      // 6. Simpan User ke Database
-      const result = await UserModel.create(userPayload);
+        // Simpan role jika dikirim, jika tidak gunakan default dari Model (PendingApproval)
+        ...(role && { role }),
+      });
 
       response.success(res, result, "Success register user");
     } catch (error) {
-      const err = error as Error;
+      const err = error as any;
+
+      // --- PERBAIKAN: Handle Duplicate Key Error (Username/Email Kembar) ---
+      if (err.code === 11000) {
+        if (err.keyPattern && err.keyPattern.username) {
+          return response.badRequest(
+            res,
+            "Username sudah digunakan, silakan pilih yang lain."
+          );
+        }
+        if (err.keyPattern && err.keyPattern.email) {
+          return response.badRequest(
+            res,
+            "Email sudah terdaftar, silakan login."
+          );
+        }
+      }
+      // ---------------------------------------------------------------------
+
       response.error(res, err, "failed register user");
     }
   },
@@ -148,42 +141,109 @@ export default {
             username: identifier,
           },
         ],
-      }).populate('vendorId'); // Populate data vendor jika ada (Opsional, berguna untuk frontend)
+        // Hapus filter isActive: true jika Anda ingin user baru (yg belum di-approve admin) bisa login
+        // Atau biarkan jika sistem mengharuskan approval admin dulu.
+        // isActive: true, 
+      }).select("+security.twoFactorSecret");
 
       if (!userByIdentifier)
-        return response.unauthorized(res, "User not found");
+        return response.unauthorized(res, "User not found or inactive");
 
       const validatePassword: boolean =
         encrypt(password) === userByIdentifier.password;
 
-      if (!validatePassword)
-        return response.unauthorized(res, "User not found");
+      if (!validatePassword) {
+        return response.unauthorized(res, "User not found or inactive");
+      }
 
-      // Generate Token
+      if (userByIdentifier.security.is2FAConfigured) {
+        const tempToken = generateTempToken({
+          id: userByIdentifier._id,
+          role: userByIdentifier.role,
+        });
+
+        return response.success(
+          res,
+          {
+            require2FA: true,
+            tempToken,
+            message: "Please provide your 2FA token to complete login",
+          },
+          "2FA verification required"
+        );
+      }
+
       const token = generateToken({
         id: userByIdentifier._id,
         role: userByIdentifier.role,
-        // Kita bisa masukkan ID vendor ke token juga jika perlu
-        vendorId: userByIdentifier.vendorId ? (userByIdentifier.vendorId as any)._id : undefined
       });
 
-      // Kembalikan Data Lengkap ke Frontend (Token + Info User)
-      const responseData = {
-        token,
-        user: {
-          id: userByIdentifier._id,
-          fullname: userByIdentifier.fullname,
-          email: userByIdentifier.email,
-          role: userByIdentifier.role,
-          // Kirim nama perusahaan jika dia vendor (untuk frontend dashboard)
-          companyName: userByIdentifier.vendorId ? (userByIdentifier.vendorId as any).companyName : undefined
-        }
+      // Kembalikan data user agar frontend bisa menyimpannya
+      const userResponse = {
+        id: userByIdentifier._id,
+        fullname: userByIdentifier.fullname,
+        email: userByIdentifier.email,
+        username: userByIdentifier.username,
+        role: userByIdentifier.role,
+        companyName: userByIdentifier.vendorId ? "Vendor Company" : "Internal" // Placeholder jika perlu
       };
 
-      response.success(res, responseData, "Success login user");
+      response.success(res, { token, user: userResponse }, "Success login user");
     } catch (error) {
       const err = error as Error;
       response.error(res, err, "failed login user");
+    }
+  },
+
+  async verifyLogin2FA(req: Request, res: Response) {
+    const { tempToken, token } = req.body as TVerifyLogin2FA;
+
+    try {
+      await verifyLogin2FASchema.validate(req.body);
+
+      let userData;
+      try {
+        userData = verifyTempToken(tempToken);
+      } catch (error) {
+        return response.unauthorized(
+          res,
+          "Temporary token expired or invalid. Please login again."
+        );
+      }
+
+      const user = await UserModel.findById(userData.id).select(
+        "+security.twoFactorSecret"
+      );
+
+      if (!user) {
+        return response.unauthorized(res, "User not found");
+      }
+
+      if (!user.security.is2FAConfigured) {
+        return response.badRequest(res, "2FA is not enabled for this user");
+      }
+
+      const isValid = verifyTwoFactorToken(
+        token,
+        user.security.twoFactorSecret
+      );
+
+      if (!isValid) {
+        return response.unauthorized(res, "Invalid 2FA token");
+      }
+
+      const authToken = generateToken({
+        id: user._id,
+        role: user.role,
+      });
+
+      response.success(
+        res,
+        { token: authToken },
+        "Login successful with 2FA verification"
+      );
+    } catch (error) {
+      response.error(res, error, "failed verify login 2fa");
     }
   },
 
@@ -195,7 +255,7 @@ export default {
      */
     try {
       const user = req.user;
-      const result = await UserModel.findById(user?.id).populate('vendorId');
+      const result = await UserModel.findById(user?.id);
 
       response.success(res, result, "Success get user profile");
     } catch (error) {
