@@ -548,8 +548,8 @@ export default {
       const updatePayload = {
         status: status,
         approvalInfo: {
-          approverRefId: user._id,
-          approverName: user.fullname,
+          approvalRefId: user._id,
+          approvalByName: user.fullname,
           approveAt: new Date(),
           notes: notes,
           isSigned: isApproved,

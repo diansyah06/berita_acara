@@ -25,18 +25,20 @@ const DashboardPage = () => {
             let filteredResult = result;
 
             if (userSess) {
+                // SINKRONISASI: Menggunakan 'category' sesuai backend
                 if (userSess.role === 'direksipekerjaan') {
-                    filteredResult = result.filter(item => item.type === 'bapp');
+                    filteredResult = result.filter(item => item.category === 'bapp');
                 }
                 else if (userSess.role === 'picgudang') {
-                    filteredResult = result.filter(item => item.type === 'bapb');
+                    filteredResult = result.filter(item => item.category === 'bapb');
                 }
             }
 
             const formattedData = filteredResult.map(item => ({
                 id: item._id,
                 nomorKontrak: item.contractNumber,
-                jenis: item.type ? item.type.toUpperCase() : '-',
+                // SINKRONISASI: Mengambil data 'category'
+                jenis: item.category ? item.category.toUpperCase() : '-',
                 vendor: item.vendorSnapshot ? item.vendorSnapshot.companyName : (item.createdBy?.fullname || 'Vendor'),
                 status: mapStatusToIndonesian(item.status),
                 tanggal: new Date(item.createdAt).toLocaleDateString('id-ID')
@@ -70,8 +72,22 @@ const DashboardPage = () => {
     const getWelcomeMessage = () => {
         if (currentUser?.role === 'direksipekerjaan') return "Selamat datang Pak Direksi. Ini daftar BAPP yang perlu diperiksa.";
         if (currentUser?.role === 'picgudang') return "Halo PIC Gudang, ini daftar barang masuk (BAPB).";
+        if (currentUser?.role === 'pemesanbarang') return "Halo Pemesan Barang. Silakan setujui BAPB yang telah diverifikasi Gudang.";
         if (currentUser?.role === 'vendor') return "Halo Vendor, ini riwayat dokumen Anda.";
         return "Dashboard Monitoring Berita Acara";
+    };
+    const handleDelete = async (id, contractNumber) => {
+        if (window.confirm(`Yakin ingin menghapus dokumen kontrak ${contractNumber}?`)) {
+            try {
+                setLoading(true);
+                await baService.delete(id);
+                alert("Dokumen berhasil dihapus!");
+                fetchData(); // Refresh data tabel
+            } catch (error) {
+                alert("Gagal menghapus dokumen: " + (error.response?.data?.meta?.message || error.message));
+                setLoading(false);
+            }
+        }
     };
 
     return (
@@ -114,7 +130,11 @@ const DashboardPage = () => {
                             <p>Sedang memuat data...</p>
                         </div>
                     ) : filteredData.length > 0 ? (
-                        <BATable data={filteredData} />
+                        <BATable
+                            data={filteredData}
+                            onDelete={handleDelete}
+                            userRole={currentUser?.role}
+                        />
                     ) : (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                             <p>Tidak ada dokumen yang ditemukan.</p>
@@ -128,6 +148,7 @@ const DashboardPage = () => {
             </div>
         </div>
     );
+
 };
 
 export default DashboardPage;

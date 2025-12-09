@@ -1,12 +1,18 @@
 import { io } from "socket.io-client";
-const SOCKET_URL = "http://localhost:3000"; 
+
+// MENGGUNAKAN URL VERCEL UNTUK SOCKET
+const SOCKET_URL = "https://back-end-asah.vercel.app";
 
 let socket;
 
 export const initSocket = (userId) => {
     if (!socket) {
-        socket = io(SOCKET_URL);
-        console.log("Menginisialisasi Socket...");
+        socket = io(SOCKET_URL, {
+            transports: ['websocket'], // Wajib untuk kestabilan koneksi cross-origin
+            reconnection: true,
+            secure: true, // Penting karena Vercel menggunakan HTTPS
+        });
+        console.log("Menginisialisasi Socket ke Vercel...");
     }
 
     if (socket && userId) {

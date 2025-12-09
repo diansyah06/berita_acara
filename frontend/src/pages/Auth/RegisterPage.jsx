@@ -4,17 +4,17 @@ import InputField from '../../components/common/InputField';
 import Button from '../../components/common/Button';
 import authService from '../../services/authService';
 
+
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
-        fullName: '',
+        fullname: '',
         username: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        role: 'vendor',
-        companyName: ''
+        confirmPassword: ''
     });
 
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (name, value) => {
@@ -28,84 +28,57 @@ const RegisterPage = () => {
         e.preventDefault();
 
         if (formData.password !== formData.confirmPassword) {
-            alert('Password dan Konfirmasi Password tidak sama!');
+            alert("Password tidak cocok!");
             return;
         }
 
-        if (formData.role === 'vendor' && !formData.companyName) {
-            alert('Nama Perusahaan wajib diisi untuk Vendor!');
-            return;
-        }
-
-        const payload = {
-            fullname: formData.fullName,
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-            confirmPassword: formData.confirmPassword,
-            role: formData.role,
-            companyName: formData.role === 'vendor' ? formData.companyName : 'Internal Kantor'
-        };
+        setLoading(true);
 
         try {
+            const payload = {
+                fullname: formData.fullname,
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+                confirmPassword: formData.confirmPassword
+            };
+
             await authService.register(payload);
-            alert(`Pendaftaran Berhasil sebagai ${formData.role}! Silakan Login.`);
+
+            alert(`Pendaftaran Berhasil! Akun Anda berstatus 'Pending'. Silakan hubungi Administrator untuk aktivasi dan penempatan.`);
             navigate('/login');
+
         } catch (error) {
             console.error(error);
-            alert('Gagal Mendaftar: ' + (error.response?.data?.message || error.message));
+            const errorMsg = error.response?.data?.meta?.message || "Gagal Mendaftar.";
+            alert(errorMsg);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className="auth-container">
+            <h2 className="auth-title">
                 Daftar Akun Baru
             </h2>
+            <p className="auth-subtitle">
+                Silakan isi data diri Anda untuk mendaftar.
+            </p>
 
             <form onSubmit={handleRegister}>
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
-                        Daftar Sebagai
-                    </label>
-                    <select
-                        style={{
-                            width: '100%', padding: '12px', borderRadius: '4px',
-                            border: '1px solid #ccc', backgroundColor: 'white'
-                        }}
-                        value={formData.role}
-                        onChange={(e) => handleChange('role', e.target.value)}
-                    >
-                        <option value="vendor">Vendor (Pembuat BA)</option>
-                        <option value="picgudang">PIC Gudang (Cek Barang)</option>
-                        <option value="direksipekerjaan">Direksi Pekerjaan (Cek Pekerjaan)</option>
-                    </select>
-                </div>
-
-                {formData.role === 'vendor' && (
-                    <div style={{ animation: 'fadeIn 0.5s' }}>
-                        <InputField
-                            label="Nama Perusahaan / CV / PT"
-                            type="text"
-                            placeholder="Contoh: PT. Vendor Sejahtera"
-                            value={formData.companyName}
-                            onChange={(e) => handleChange('companyName', e.target.value)}
-                        />
-                    </div>
-                )}
-
                 <InputField
                     label="Nama Lengkap"
                     type="text"
                     placeholder="Nama Lengkap Anda"
-                    value={formData.fullName}
-                    onChange={(e) => handleChange('fullName', e.target.value)}
+                    value={formData.fullname}
+                    onChange={(e) => handleChange('fullname', e.target.value)}
                 />
 
                 <InputField
                     label="Username"
                     type="text"
-                    placeholder="Buat Username unik"
+                    placeholder="Username unik"
                     value={formData.username}
                     onChange={(e) => handleChange('username', e.target.value)}
                 />
@@ -121,7 +94,7 @@ const RegisterPage = () => {
                 <InputField
                     label="Password"
                     type="password"
-                    placeholder="Buat password"
+                    placeholder="Min 6 karakter, Huruf Besar & Angka"
                     value={formData.password}
                     onChange={(e) => handleChange('password', e.target.value)}
                 />
@@ -134,14 +107,21 @@ const RegisterPage = () => {
                     onChange={(e) => handleChange('confirmPassword', e.target.value)}
                 />
 
+                <div className="auth-info-box">
+                    ℹ️ Info: Setelah mendaftar, akun Anda perlu diverifikasi oleh Admin untuk mendapatkan akses Vendor atau Gudang.
+                </div>
+
                 <Button type="submit">
-                    Daftar Sekarang
+                    {loading ? 'Memproses...' : 'Daftar Sekarang'}
                 </Button>
             </form>
 
-            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px' }}>
-                Sudah punya akun? <Link to="/login" style={{ color: '#007bff', fontWeight: 'bold', textDecoration: 'none' }}>Login di sini</Link>
+            {/* --- BAGIAN INI YANG DIPERBAIKI (Sudah sama dengan Login) --- */}
+            <div className="auth-footer">
+                Sudah punya akun? 
+                <Link to="/login" className="auth-link">Login di sini</Link>
             </div>
+            {/* ----------------------------------------------------------- */}
         </div>
     );
 };

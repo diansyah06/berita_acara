@@ -1,14 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; 
-import './BATable.css'; 
+import { Link } from 'react-router-dom';
+import './BATable.css';
 
 const getStatusClass = (status) => {
     if (status === 'Disetujui') return 'status-disetujui';
     if (status === 'Ditolak') return 'status-ditolak';
-    return 'status-menunggu'; 
+    return 'status-menunggu';
 };
 
-const BATable = ({ data }) => {
+const BATable = ({ data, onDelete, userRole }) => {
     if (!data || data.length === 0) {
         return <p>Belum ada data Berita Acara.</p>;
     }
@@ -39,9 +39,21 @@ const BATable = ({ data }) => {
                                 </span>
                             </td>
                             <td>
-                                <Link to={`/ba/${item.id}`} className="action-button">
-                                    Detail
-                                </Link>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <Link to={`/ba/${item.id}`} className="action-button">
+                                        Detail
+                                    </Link>
+
+                                    {userRole === 'vendor' && item.status !== 'Disetujui' && (
+                                        <button
+                                            className="action-button"
+                                            style={{ backgroundColor: '#e74c3c' }} 
+                                            onClick={() => onDelete(item.id, item.nomorKontrak)}
+                                        >
+                                            Hapus
+                                        </button>
+                                    )}
+                                </div>
                             </td>
                         </tr>
                     ))}

@@ -3,6 +3,7 @@ import { encrypt } from "../utils/encryption";
 import { ROLES } from "../utils/constant";
 import { COMPANY_MODEL_NAME } from "./company.model";
 import { WAREHOUSE_MODEL_NAME } from "./warehouse.model";
+import * as Yup from "yup";
 
 export const USER_MODEL_NAME = "User";
 

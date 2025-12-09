@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import InputField from '../../components/common/InputField';
 import baService from '../../services/baService';
+import api from '../../services/api'; // Import api untuk fetch warehouse
 import './CreateBAPage.css';
 
 const CreateBAPage = () => {
@@ -9,9 +10,13 @@ const CreateBAPage = () => {
     const [currentUser, setCurrentUser] = useState(null);
 
     const [nomorKontrak, setNomorKontrak] = useState('');
-    const [jenisBa, setJenisBa] = useState('BAPB'); 
+    const [jenisBa, setJenisBa] = useState('bapb'); // Default lowercase sesuai enum backend
     const [nominal, setNominal] = useState('');
     const [keterangan, setKeterangan] = useState('');
+
+    // State untuk Gudang
+    const [warehouses, setWarehouses] = useState([]);
+    const [selectedWarehouse, setSelectedWarehouse] = useState('');
 
     useEffect(() => {
         const userSess = JSON.parse(localStorage.getItem('user_sess'));
@@ -22,23 +27,45 @@ const CreateBAPage = () => {
             return;
         }
         setCurrentUser(userSess);
+
+        // Ambil data gudang saat halaman dimuat
+        fetchWarehouses();
     }, [navigate]);
+
+    const fetchWarehouses = async () => {
+        try {
+            const response = await api.get('/warehouse');
+            if (response.data && response.data.data) {
+                setWarehouses(response.data.data);
+            }
+        } catch (error) {
+            console.error("Gagal memuat data gudang:", error);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!currentUser) return;
 
+        // Validasi: BAPB wajib pilih gudang
+        if (jenisBa === 'bapb' && !selectedWarehouse) {
+            alert('Untuk dokumen BAPB, Anda wajib memilih Gudang Tujuan!');
+            return;
+        }
+
         const payload = {
-            contractNumber: nomorKontrak,           
-            type: jenisBa.toLowerCase(),            
-            paymentNominal: parseInt(nominal) || 0, 
-            description: keterangan                
+            contractNumber: nomorKontrak,
+            category: jenisBa, // SINKRONISASI: Backend minta 'category'
+            paymentNominal: parseInt(nominal) || 0,
+            description: keterangan,
+            // Kirim targetWarehouse hanya jika BAPB
+            targetWarehouse: jenisBa === 'bapb' ? selectedWarehouse : null
         };
 
         try {
             await baService.create(payload);
-            alert('Berhasil! BA telah dibuat dan dikirim ke Pihak Internal untuk diperiksa.');
+            alert('Berhasil! BA telah dibuat dan dikirim ke Pihak Internal.');
             navigate('/dashboard');
         } catch (error) {
             console.error(error);
@@ -78,10 +105,32 @@ const CreateBAPage = () => {
                                     value={jenisBa}
                                     onChange={(e) => setJenisBa(e.target.value)}
                                 >
-                                    <option value="BAPB">BAPB (Berita Acara Pemeriksaan Barang)</option>
-                                    <option value="BAPP">BAPP (Berita Acara Pemeriksaan Pekerjaan)</option>
+                                    <option value="bapb">BAPB (Berita Acara Pemeriksaan Barang)</option>
+                                    <option value="bapp">BAPP (Berita Acara Pemeriksaan Pekerjaan)</option>
                                 </select>
                             </div>
+
+                            {/* Kondisional Input Gudang */}
+                            {jenisBa === 'bapb' && (
+                                <div style={{ animation: 'fadeIn 0.3s' }}>
+                                    <label style={{ fontWeight: 'bold', display: 'block', marginTop: '10px' }}>
+                                        Gudang Tujuan (Wajib)
+                                    </label>
+                                    <select
+                                        className="form-select"
+                                        value={selectedWarehouse}
+                                        onChange={(e) => setSelectedWarehouse(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">-- Pilih Gudang --</option>
+                                        {warehouses.map((w) => (
+                                            <option key={w._id} value={w._id}>
+                                                {w.warehouseName} - {w.warehouseAddress}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <InputField
                                 label="Nominal Tagihan (Rp)"

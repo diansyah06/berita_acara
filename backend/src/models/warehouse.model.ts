@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import * as yup from "yup";
 import { STATUS_WAREHOUSE } from "../utils/constant";
+import { getId } from "../utils/id";
 
 export const WAREHOUSE_MODEL_NAME = "Warehouse";
 
@@ -15,10 +16,16 @@ export const warehouseDAO = yup.object({
     .required(),
 });
 
-export type Warehouse = yup.InferType<typeof warehouseDAO>;
+export type Warehouse = yup.InferType<typeof warehouseDAO> &{
+  _id: string;
+};
 
 const WarehouseSchema = new Schema<Warehouse>(
   {
+    _id: {
+      type: Schema.Types.String,
+      default: () => getId(),
+    },
     warehouseName: {
       type: Schema.Types.String,
       required: true,
@@ -35,8 +42,17 @@ const WarehouseSchema = new Schema<Warehouse>(
   },
   {
     timestamps: true,
+    _id: false,
   }
 );
+
+WarehouseSchema.pre("save", function (next) {
+  const warehouse = this;
+  if (!warehouse._id) {
+    warehouse._id = getId();
+  }
+  next();
+})
 
 const WarehouseModel = mongoose.model(WAREHOUSE_MODEL_NAME, WarehouseSchema);
 

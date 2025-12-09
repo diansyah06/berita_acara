@@ -38,6 +38,11 @@ const doc = {
         identifier: "",
         password: "",
       },
+      UpdatePasswordRequest: {
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: "",
+      },
       CreateCompanyRequest: {
         companyName: "",
         companyAddress: "",

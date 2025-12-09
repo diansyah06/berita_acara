@@ -12,19 +12,23 @@ import response from "../utils/response";
 import { IReqUser } from "../utils/interfaces";
 import { verifyTwoFactorToken } from "../utils/2fa";
 
-// Update Tipe Data Register untuk menerima role
 type TRegister = {
   fullname: string;
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role?: string; // Tambahkan ini agar role dari frontend terbaca
 };
 
 type TLogin = {
   identifier: string;
   password: string;
+};
+
+type TUpdatePassword = {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
 };
 
 type TVerifyLogin2FA = {
@@ -74,9 +78,41 @@ const verifyLogin2FASchema = Yup.object({
     .matches(/^\d+$/, "Token must contain only numbers"),
 });
 
+const updatePasswordSchema = Yup.object({
+  currentPassword: Yup.string().required(),
+  newPassword: Yup.string()
+    .required()
+    .min(6, "Password must be at least 6 characters long")
+    .test(
+      "at-least-one-uppercase-letter",
+      "Password must contain at least one uppercase letter",
+      (value) => {
+        if (!value) {
+          return false;
+        }
+        const regex = /(?=.*[A-Z])/;
+        return regex.test(value);
+      }
+    )
+    .test(
+      "at-least-one-number",
+      "Password must contain at least one number",
+      (value) => {
+        if (!value) {
+          return false;
+        }
+        const regex = /(?=.*\d)/;
+        return regex.test(value);
+      }
+    ),
+  confirmNewPassword: Yup.string()
+    .required()
+    .oneOf([Yup.ref("newPassword"), ""], "Password does not match"),
+});
+
 export default {
   async register(req: Request, res: Response) {
-    const { fullname, username, email, password, confirmPassword, role } =
+    const { fullname, username, email, password, confirmPassword } =
       req.body as TRegister;
 
     try {
@@ -93,35 +129,14 @@ export default {
         username,
         email,
         password,
-        // Simpan role jika dikirim, jika tidak gunakan default dari Model (PendingApproval)
-        ...(role && { role }),
       });
 
       response.success(res, result, "Success register user");
     } catch (error) {
-      const err = error as any;
-
-      // --- PERBAIKAN: Handle Duplicate Key Error (Username/Email Kembar) ---
-      if (err.code === 11000) {
-        if (err.keyPattern && err.keyPattern.username) {
-          return response.badRequest(
-            res,
-            "Username sudah digunakan, silakan pilih yang lain."
-          );
-        }
-        if (err.keyPattern && err.keyPattern.email) {
-          return response.badRequest(
-            res,
-            "Email sudah terdaftar, silakan login."
-          );
-        }
-      }
-      // ---------------------------------------------------------------------
-
+      const err = error as Error;
       response.error(res, err, "failed register user");
     }
   },
-
   async login(req: Request, res: Response) {
     /**
      * #swagger.requestBody = {
@@ -141,19 +156,17 @@ export default {
             username: identifier,
           },
         ],
-        // Hapus filter isActive: true jika Anda ingin user baru (yg belum di-approve admin) bisa login
-        // Atau biarkan jika sistem mengharuskan approval admin dulu.
-        // isActive: true, 
+        isActive: true,
       }).select("+security.twoFactorSecret");
 
       if (!userByIdentifier)
-        return response.unauthorized(res, "User not found or inactive");
+        return response.unauthorized(res, "User not found");
 
       const validatePassword: boolean =
         encrypt(password) === userByIdentifier.password;
 
       if (!validatePassword) {
-        return response.unauthorized(res, "User not found or inactive");
+        return response.unauthorized(res, "User not found");
       }
 
       if (userByIdentifier.security.is2FAConfigured) {
@@ -178,23 +191,12 @@ export default {
         role: userByIdentifier.role,
       });
 
-      // Kembalikan data user agar frontend bisa menyimpannya
-      const userResponse = {
-        id: userByIdentifier._id,
-        fullname: userByIdentifier.fullname,
-        email: userByIdentifier.email,
-        username: userByIdentifier.username,
-        role: userByIdentifier.role,
-        companyName: userByIdentifier.vendorId ? "Vendor Company" : "Internal" // Placeholder jika perlu
-      };
-
-      response.success(res, { token, user: userResponse }, "Success login user");
+      response.success(res, { token }, "Success login user");
     } catch (error) {
       const err = error as Error;
       response.error(res, err, "failed login user");
     }
   },
-
   async verifyLogin2FA(req: Request, res: Response) {
     const { tempToken, token } = req.body as TVerifyLogin2FA;
 
@@ -239,14 +241,13 @@ export default {
 
       response.success(
         res,
-        { token: authToken },
+        authToken,
         "Login successful with 2FA verification"
       );
     } catch (error) {
       response.error(res, error, "failed verify login 2fa");
     }
   },
-
   async me(req: IReqUser, res: Response) {
     /**
      * #swagger.secuirty = [{
@@ -263,4 +264,38 @@ export default {
       response.error(res, err, "failed get user profile");
     }
   },
+  async updatePassword(req: IReqUser, res: Response) {
+    try {
+      const userId = req.user?.id;
+      // FIX: Gunakan double casting 'as unknown as TUpdatePassword'
+      // untuk menghindari konflik tipe data dengan IReqUser
+      const { currentPassword, newPassword, confirmNewPassword } = req.body as unknown as TUpdatePassword;
+
+      await updatePasswordSchema.validate({
+        currentPassword,
+        newPassword,
+        confirmNewPassword,
+      });
+
+      const user = await UserModel.findById(userId);
+
+      if (!user || user.password !== encrypt(currentPassword)) {
+        return response.notFound(res, "User not found");
+      }
+
+      const result = await UserModel.findByIdAndUpdate(
+        userId,
+        { 
+          password: encrypt(newPassword) 
+        },
+        { 
+          new: true 
+        }
+      );
+
+      response.success(res, result, "Success update user password");
+    } catch (error) {
+      response.error(res, error as Error, "failed update user password");
+    }
+  }
 };

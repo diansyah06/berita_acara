@@ -41,32 +41,15 @@ const assignRoleSchema = Yup.object({
 });
 
 export default {
-  // [BARU] Fungsi untuk mengambil semua user (untuk halaman admin frontend)
-  async getAllUsers(req: IReqUser, res: Response) {
+  async getUser(req: IReqUser, res: Response) {
     try {
-      const result = await UserModel.find()
-        .populate("vendorId", "companyName") // Tampilkan nama PT jika vendor
-        .populate("warehouseId", "warehouseName") // Tampilkan gudang jika PIC
-        .select("-password") // Jangan kirim password ke frontend
-        .sort({ createdAt: -1 });
+      const result = await UserModel.find();
 
-      response.success(res, result, "Success get all users");
-    } catch (error) {
-      response.error(res, error, "failed get all users");
-    }
-  },
-
-  async getUserPending(req: IReqUser, res: Response) {
-    try {
-      const result = await UserModel.find({
-        role: ROLES.PENDINGAPPROVAL,
-      });
-      response.success(res, result, "Success get user pending approval");
+      response.success(res, result, "Success get user");
     } catch (error) {
       response.error(res, error, "failed get user pending approval");
     }
   },
-
   async assignRole(req: IReqUser, res: Response) {
     try {
       const { id } = req.params;
